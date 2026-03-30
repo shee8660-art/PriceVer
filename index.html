@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Waltermart Price Verifier  - IndexedDB with Reset</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; display: flex; justify-content: center; align-items: center; }
+        .container { max-width: 750px; width: 100%; background: white; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 1.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .header h1 { font-size: 1.6rem; }
+        .header h1 i { margin-right: 10px; }
+        .sub { font-size: 0.85rem; opacity: 0.9; margin-top: 5px; }
+        .promo-icon { background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+        .camera-btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; padding: 14px 20px; font-size: 1.1rem; font-weight: 600; border-radius: 60px; width: calc(100% - 3rem); margin: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
+        @media (min-width: 768px) { .camera-btn { display: none; } .desktop-note { display: flex; } }
+        .desktop-note { display: none; background: linear-gradient(135deg, #fef3c7, #fde68a); margin: 1rem 1.5rem; padding: 12px 16px; border-radius: 60px; align-items: center; justify-content: center; gap: 10px; color: #92400e; }
+        .scanner-container { background: #1f2937; border-radius: 28px; padding: 16px; margin: 0 1.5rem 1.5rem; display: none; }
+        .scanner-container.active { display: block; }
+        #reader { width: 100%; border-radius: 20px; }
+        .close-scanner { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 40px; margin-top: 12px; cursor: pointer; width: 100%; }
+        .search-area { background: #f8fafc; border-radius: 28px; padding: 1.2rem; margin: 1rem 1.5rem; }
+        .smart-badge { background: #e2e8f0; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+        .input-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .search-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
+        #searchInput { width: 100%; padding: 14px 45px 14px 18px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 1rem; outline: none; }
+        #searchInput:focus { border-color: #667eea; }
+        .clear-input-btn { position: absolute; right: 15px; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; display: none; }
+        .clear-input-btn.show { display: block; }
+        #verifyBtn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 60px; padding: 0 28px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .auto-clear-toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.7rem; color: #64748b; }
+        .auto-clear-toggle input { width: 16px; height: 16px; cursor: pointer; accent-color: #667eea; }
+        .result-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 28px; padding: 1.3rem; margin: 1rem 1.5rem; border-left: 8px solid #10b981; display: none; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .product-name { font-size: 1.4rem; font-weight: 800; color: #1e3c72; margin-bottom: 8px; }
+        .sku-badge { background: #e2e8f0; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; display: inline-block; margin-right: 8px; font-family: monospace; }
+        .promo-badge { display: inline-block; padding: 8px 16px; border-radius: 40px; font-size: 0.8rem; font-weight: 700; margin: 10px 0; }
+        .price-off { background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; }
+        .buy-take { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; }
+        .bogo { background: linear-gradient(135deg, #ec489a, #be185d); color: white; }
+        .buy-x-price { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+        .promo-desc { background: #fef3c7; padding: 12px; border-radius: 20px; margin: 12px 0; font-weight: 600; color: #92400e; }
+        .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 15px 0; padding: 15px; background: white; border-radius: 20px; text-align: center; }
+        .price-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
+        .price-value { font-size: 1.2rem; font-weight: 800; color: #1e293b; }
+        .savings { background: #dbeafe; padding: 10px; border-radius: 16px; text-align: center; margin-top: 12px; font-weight: 600; color: #1e40af; }
+        .validity { background: #f1f5f9; padding: 8px 12px; border-radius: 16px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
+        .stats-bar { background: #f1f5f9; padding: 10px 18px; border-radius: 40px; font-size: 0.75rem; margin: 0 1.5rem 1rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        footer { font-size: 0.7rem; text-align: center; padding: 1rem 1.5rem 1.5rem; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+        .upload-btn { position: fixed; bottom: 25px; right: 25px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); border: none; font-size: 1.5rem; z-index: 1000; transition: transform 0.2s; }
+        .upload-btn:hover { transform: scale(1.05); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 32px; padding: 2rem; max-width: 450px; width: 90%; animation: modalSlideIn 0.3s ease; }
+        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { text-align: center; margin-bottom: 1.5rem; }
+        .modal-header i { font-size: 3rem; color: #f59e0b; margin-bottom: 0.5rem; }
+        .modal-header h2 { color: #1e293b; font-size: 1.5rem; }
+        .modal-header p { color: #64748b; font-size: 0.85rem; margin-top: 0.5rem; }
+        .modal-input-group { margin: 1.2rem 0; }
+        .modal-input-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+        .modal-input-group input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 1rem; outline: none; }
+        .modal-input-group input:focus { border-color: #667eea; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 1.5rem; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 60px; border: none; cursor: pointer; font-weight: 600; font-size: 1rem; transition: transform 0.2s; }
+        .modal-buttons button:active { transform: scale(0.98); }
+        .btn-confirm { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-cancel { background: #f1f5f9; color: #475569; }
+        .modal-error { background: #fef2f2; color: #ef4444; padding: 10px; border-radius: 60px; font-size: 0.8rem; text-align: center; margin-top: 1rem; display: none; }
+        .modal-error.show { display: block; }
+        .toast { position: fixed; bottom: 100px; right: 25px; background: #10b981; color: white; padding: 12px 20px; border-radius: 60px; font-size: 0.85rem; z-index: 1001; display: none; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .toast.show { display: flex; animation: slideInRight 0.3s ease; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .info-banner { background: #fef3c7; margin: 0 1.5rem 1rem; padding: 10px; border-radius: 20px; font-size: 0.7rem; text-align: center; color: #92400e; }
+        .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 10px; margin-top: 10px; display: none; overflow: hidden; }
+        .progress-bar.active { display: block; }
+        .progress-fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: width 0.3s; border-radius: 10px; }
+        .action-buttons { display: flex; gap: 8px; }
+        .reset-btn { background: #ef4444; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; color: white; transition: background 0.2s; }
+        .reset-btn:hover { background: #dc2626; }
+        .sample-data-btn { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; margin-left: 8px; transition: background 0.2s; }
+        .sample-data-btn:hover { background: #e2e8f0; }
+        @media (max-width: 640px) { .price-grid { grid-template-columns: 1fr; } .action-buttons { flex-direction: column; } .reset-btn, .sample-data-btn { margin: 2px 0; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Waltermart Supermarket</p></div>
+        <div class="promo-icon"><i class="fas fa-percent"></i></div>
+    </div>
+    
+    <div class="info-banner">
+        <i class="fas fa-database"></i> Supports up to 50-100MB of data
+    </div>
+    
+    <button id="cameraBtn" class="camera-btn"><i class="fas fa-camera"></i> Scan Barcode</button>
+    <div class="desktop-note"><i class="fas fa-desktop"></i> Desktop: Enter SKU or barcode</div>
+    
+    <div id="scannerContainer" class="scanner-container">
+        <div id="reader"></div>
+        <button id="closeScanner" class="close-scanner">Close Camera</button>
+    </div>
+    
+    <div class="search-area">
+        <div class="smart-badge"><i class="fas fa-magic"></i> Auto-detects SKU or Barcode</div>
+        <div class="input-group">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Enter SKU or scan barcode..." autocomplete="off">
+                <button id="clearInputBtn" class="clear-input-btn"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <button id="verifyBtn"><i class="fas fa-search"></i> Search</button>
+        </div>
+        <div class="auto-clear-toggle">
+            <input type="checkbox" id="autoClearCheckbox" checked>
+            <label><i class="fas fa-sync-alt"></i> Auto-clear after search (continuous scanning)</label>
+        </div>
+    </div>
+    
+    <div id="resultArea" class="result-card"></div>
+    
+    <div class="stats-bar">
+        <div><i class="fas fa-database"></i> <span id="productCount">0</span> products</div>
+        <div><i class="fas fa-clock"></i> <span id="lastUpdate">ready</span></div>
+        <div class="action-buttons">
+            <button id="resetStorageBtn" class="reset-btn"><i class="fas fa-trash-alt"></i> Reset Storage</button>
+            <button id="resetBtn" class="sample-data-btn"><i class="fas fa-redo"></i> Reset to Sample</button>
+        </div>
+    </div>
+    
+    <footer><i class="fas fa-database"></i> IndexedDB Storage • Supports 50,000+ products • Reset button clears all data</footer>
+</div>
+
+<button class="upload-btn" id="uploadBtn"><i class="fas fa-upload"></i></button>
+<div id="toast" class="toast"><i class="fas fa-check-circle"></i> <span id="toastMsg"></span></div>
+
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fas fa-lock"></i>
+            <h2>Superuser Access</h2>
+            <p>Enter password to upload CSV to IndexedDB</p>
+        </div>
+        <div class="modal-input-group">
+            <label><i class="fas fa-key"></i> Password</label>
+            <input type="password" id="modalPassword" placeholder="Enter superuser password">
+        </div>
+        <input type="file" id="modalFile" accept=".csv" style="display: none;">
+        <div id="modalError" class="modal-error"></div>
+        <div id="uploadProgress" style="display:none; text-align:center; margin-top:10px;">
+            <div class="spinner"></div> Processing CSV... <span id="progressPercent">0</span>%
+        </div>
+        <div id="progressBar" class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="modal-buttons">
+            <button class="btn-cancel" id="modalCancel">Cancel</button>
+            <button class="btn-confirm" id="modalConfirm">Upload CSV</button>
+        </div>
+        <div style="font-size:0.7rem; margin-top:1rem; text-align:center;">CSV: Sku, Upc, Descr, RegPrice, PromoPrice, Qty1, Qty2, Method, Start, Stop</div>
+    </div>
+</div>
+
+<div id="resetConfirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+            <h2>⚠️ Confirm Reset</h2>
+            <p>This will permanently delete ALL products from your storage and reset to sample data.</p>
+            <p style="font-weight: bold; color: #ef4444; margin-top: 10px;">This action cannot be undone!</p>
+        </div>
+        <div class="modal-input-group">
+            <label>Type "RESET" to confirm</label>
+            <input type="text" id="resetConfirmInput" placeholder='Type "RESET" to confirm'>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-cancel" id="resetModalCancel">Cancel</button>
+            <button class="btn-confirm" id="resetModalConfirm" style="background: #ef4444;">Delete All Data</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+    // ============================================
+    // INDEXEDDB DATABASE - LARGE STORAGE
+    // ============================================
+    
+    let db = null;
+    let productsBySku = new Map();
+    let productsByUpc = new Map();
+    
+    const DB_NAME = 'PriceVerifierDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'products';
+    
+    // Open IndexedDB
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                console.log('IndexedDB opened successfully');
+                resolve(db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    const store = db.createObjectStore(STORE_NAME, { keyPath: 'sku' });
+                    store.createIndex('upc', 'upc', { unique: false });
+                    console.log('Object store created');
+                }
+            };
+        });
+    }
+    
+    // Load all products from IndexedDB to memory
+    async function loadAllProducts() {
+        if (!db) await openDB();
+        
+        return new Promise((resolve) => {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            
+            request.onsuccess = () => {
+                const products = request.result;
+                productsBySku.clear();
+                productsByUpc.clear();
+                
+                products.forEach(product => {
+                    productsBySku.set(product.sku, product);
+                    if (product.upc) productsByUpc.set(product.upc, product);
+                });
+                
+                updateStats();
+                resolve(products.length);
+            };
+            
+            request.onerror = () => resolve(0);
+        });
+    }
+    
+    // Clear all products
+    async function clearAllProducts() {
+        if (!db) await openDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.clear();
+            
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+        });
+    }
+    
+    // Bulk insert products
+    async function bulkInsertProducts(products) {
+        if (!db) await openDB();
+        
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            
+            let count = 0;
+            
+            for (const product of products) {
+                const request = store.put(product);
+                request.onsuccess = () => { count++; };
+                request.onerror = (e) => { reject(e); };
+            }
+            
+            transaction.oncomplete = () => resolve(count);
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+    
+    // Load sample data
+    async function loadSampleData() {
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        
+        const sampleProducts = [
+            { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", reg_price: 37.00, promo_price: 34.00, qty1: 1, qty2: 0, method: 25, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "Grocery" },
+            { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", reg_price: 45.00, promo_price: 69.00, qty1: 2, qty2: 0, method: 1, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "Snacks" },
+            { sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", reg_price: 65.00, promo_price: 65.00, qty1: 2, qty2: 0, method: 1, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "Canned" },
+            { sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", reg_price: 350.00, promo_price: 175.00, qty1: 1, qty2: 0, method: 25, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Premium", dept: "Coffee" },
+            { sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", reg_price: 25.00, promo_price: 100.00, qty1: 5, qty2: 0, method: 1, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "Beverages" },
+            { sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", reg_price: 100.00, promo_price: 90.00, qty1: 1, qty2: 0, method: 0, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "General" },
+            { sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", reg_price: 50.00, promo_price: 0, qty1: 1, qty2: 1, method: 0, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Main", dept: "Snacks" },
+            { sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", reg_price: 200.00, promo_price: 140.00, qty1: 1, qty2: 0, method: 25, start_date: formatDate(today), stop_date: formatDate(nextWeek), store: "Clearance", dept: "Sale" }
+        ];
+        
+        await clearAllProducts();
+        await bulkInsertProducts(sampleProducts);
+        await loadAllProducts();
+        showToast("✅ Sample data loaded! " + productsBySku.size + " products");
+    }
+    
+    // Reset entire storage
+    async function resetStorage() {
+        try {
+            await clearAllProducts();
+            await loadSampleData();
+            showToast("✅ Storage reset successfully! Sample data loaded.");
+            performSearch();
+        } catch (error) {
+            console.error('Reset error:', error);
+            showToast("❌ Error resetting storage: " + error.message);
+        }
+    }
+    
+    // Parse CSV with progress
+    function parseCSVAndLoad(csvText, onProgress) {
+        return new Promise((resolve, reject) => {
+            const lines = csvText.split(/\r?\n/);
+            if (lines.length < 2) reject(new Error("Empty CSV file"));
+            
+            const headers = lines[0].split(",").map(h => h.trim().replace(/^\uFEFF/, ''));
+            const idxSku = headers.findIndex(h => h.toLowerCase() === "sku");
+            const idxUpc = headers.findIndex(h => h.toLowerCase() === "upc");
+            const idxDescr = headers.findIndex(h => h.toLowerCase() === "descr");
+            const idxReg = headers.findIndex(h => h.toLowerCase() === "regprice");
+            const idxPromo = headers.findIndex(h => h.toLowerCase() === "promoprice");
+            const idxQty1 = headers.findIndex(h => h.toLowerCase() === "qty1");
+            const idxQty2 = headers.findIndex(h => h.toLowerCase() === "qty2");
+            const idxMethod = headers.findIndex(h => h.toLowerCase() === "method");
+            const idxStart = headers.findIndex(h => h.toLowerCase() === "start");
+            const idxStop = headers.findIndex(h => h.toLowerCase() === "stop");
+            
+            if (idxSku === -1 || idxUpc === -1 || idxDescr === -1 || idxReg === -1) {
+                reject(new Error("Missing required columns: Sku, Upc, Descr, RegPrice"));
+                return;
+            }
+            
+            const products = [];
+            let count = 0;
+            const totalLines = lines.length;
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = [];
+                let inQuote = false, curr = "";
+                for (let ch of line) {
+                    if (ch === '"') inQuote = !inQuote;
+                    else if (ch === ',' && !inQuote) { values.push(curr.trim()); curr = ""; }
+                    else curr += ch;
+                }
+                values.push(curr.trim());
+                if (values.length < headers.length) continue;
+                
+                const sku = values[idxSku]?.replace(/^"|"$/g, '').trim() || "";
+                const upc = values[idxUpc]?.replace(/^"|"$/g, '').trim() || "";
+                const descr = values[idxDescr]?.replace(/^"|"$/g, '').trim() || "";
+                const reg = parseFloat(values[idxReg]?.replace(/^"|"$/g, '').trim() || 0);
+                const promo = idxPromo !== -1 && values[idxPromo] ? parseFloat(values[idxPromo].replace(/^"|"$/g, '').trim()) : null;
+                const qty1 = idxQty1 !== -1 && values[idxQty1] ? parseInt(values[idxQty1].replace(/^"|"$/g, '').trim()) || 1 : 1;
+                const qty2 = idxQty2 !== -1 && values[idxQty2] ? parseInt(values[idxQty2].replace(/^"|"$/g, '').trim()) || 0 : 0;
+                const method = idxMethod !== -1 && values[idxMethod] ? parseInt(values[idxMethod].replace(/^"|"$/g, '').trim()) || 0 : 0;
+                const start = idxStart !== -1 && values[idxStart] ? values[idxStart].replace(/^"|"$/g, '').trim() : null;
+                const stop = idxStop !== -1 && values[idxStop] ? values[idxStop].replace(/^"|"$/g, '').trim() : null;
+                
+                if ((sku || upc) && !isNaN(reg) && descr && reg > 0) {
+                    products.push({ sku, upc, descr, reg_price: reg, promo_price: promo, qty1, qty2, method, start_date: start, stop_date: stop });
+                    count++;
+                }
+                
+                if (onProgress && i % 1000 === 0) {
+                    onProgress(Math.floor(i / totalLines * 100));
+                }
+            }
+            
+            if (count === 0) reject(new Error("No valid products found"));
+            if (onProgress) onProgress(100);
+            resolve(products);
+        });
+    }
+    
+    // Format functions
+    function formatCurrency(amt) {
+        if (amt === 0) return "FREE";
+        if (!amt || isNaN(amt)) return "₱0.00";
+        return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amt);
+    }
+    
+    function formatDate(d) { if (!d) return null; const date = new Date(d); return isNaN(date.getTime()) ? d : date.toLocaleDateString('en-PH'); }
+    
+    function detectPromo(p) {
+        const reg = p.reg_price, promo = p.promo_price, qty1 = p.qty1 || 1, qty2 = p.qty2 || 0, method = p.method || 0;
+        if (!promo) return null;
+        if (method === 1 && qty1 === 2 && promo === reg) return { badgeClass: "buy-take", name: "BUY 1 TAKE 1", promoText: "BUY 1 TAKE 1", regularPrice: reg, promoPrice: promo, savings: reg, discountPercent: "100" };
+        if (method === 1 && qty1 > 1) { const savings = (reg * qty1 - promo).toFixed(2); return { badgeClass: "buy-x-price", name: "Multi-Buy", promoText: `Buy ${qty1} for ${formatCurrency(promo)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg*qty1-promo)/(reg*qty1)*100).toFixed(1) }; }
+        if (method === 25 && promo === reg/2) { const savings = (reg - promo).toFixed(2); return { badgeClass: "bogo", name: "50% OFF", promoText: `50% OFF - Was ${formatCurrency(reg)}, Now ${formatCurrency(promo)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: "50" }; }
+        if (method === 25 && promo < reg) { const savings = (reg - promo).toFixed(2); return { badgeClass: "price-off", name: "Price Off", promoText: `Price Off - Was ${formatCurrency(reg)}, Now ${formatCurrency(promo)}, Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg-promo)/reg*100).toFixed(1) }; }
+        if (qty2 > 0 && promo === 0) { const savings = (reg * qty2).toFixed(2); return { badgeClass: "buy-take", name: "Buy X Take Y Free", promoText: `Buy ${qty1} Get ${qty2} Free`, regularPrice: reg, promoPrice: 0, savings: savings, discountPercent: "100" }; }
+        if (promo < reg) { const savings = (reg - promo).toFixed(2); return { badgeClass: "price-off", name: "Percentage Discount", promoText: `${((reg-promo)/reg*100).toFixed(1)}% Off - Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg-promo)/reg*100).toFixed(1) }; }
+        return null;
+    }
+    
+    function searchProduct(query) {
+        if (!query?.trim()) return null;
+        const q = query.trim().toUpperCase();
+        if (productsBySku.has(q)) return { product: productsBySku.get(q), type: "SKU", value: q };
+        if (productsByUpc.has(q)) return { product: productsByUpc.get(q), type: "Barcode", value: q };
+        return null;
+    }
+    
+    function displayResult(r) {
+        const div = document.getElementById("resultArea");
+        if (!r) { div.style.display = "block"; div.innerHTML = `<div style="padding:16px;text-align:center"><i class="fas fa-search" style="font-size:2rem;color:#ef4444"></i><br><strong>Product Not Found</strong><br><small>Try: PRICE01, BUY201, TAKE401, BOGO01</small></div>`; return; }
+        const p = r.product;
+        const promo = detectPromo(p);
+        let promoHtml = '';
+        if (promo) { promoHtml = `<div class="promo-badge ${promo.badgeClass}"><i class="fas fa-tag"></i> ${promo.name}</div><div class="promo-desc"><i class="fas fa-bullhorn"></i> ${promo.promoText}</div><div class="price-grid"><div><div class="price-label">Regular</div><div class="price-value">${formatCurrency(promo.regularPrice)}</div></div><div><div class="price-label">Promo</div><div class="price-value" style="color:#ea580c">${promo.promoPrice > 0 ? formatCurrency(promo.promoPrice) : 'FREE'}</div></div><div><div class="price-label">Discount</div><div class="price-value" style="color:#10b981">${promo.discountPercent}%</div></div></div><div class="savings"><i class="fas fa-piggy-bank"></i> You Save: ${formatCurrency(promo.savings)}</div>`; }
+        else { promoHtml = `<div class="price-grid"><div><div class="price-label">Regular Price</div><div class="price-value">${formatCurrency(p.reg_price)}</div></div></div>`; }
+        div.style.display = "block";
+        div.innerHTML = `<div class="product-name">${escapeHtml(p.descr)}</div><div><span class="sku-badge"><i class="fas fa-hashtag"></i> SKU: ${escapeHtml(p.sku)}</span>${p.upc ? `<span class="sku-badge"><i class="fas fa-barcode"></i> UPC: ${escapeHtml(p.upc)}</span>` : ''}</div>${promoHtml}<div style="margin-top:12px; font-size:0.7rem; text-align:center;"><i class="fas ${r.type === 'SKU' ? 'fa-hashtag' : 'fa-barcode'}"></i> Searched by ${r.type}: ${escapeHtml(r.value)}</div>`;
+    }
+    
+    function escapeHtml(s) { if (!s) return ""; return String(s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+    function showToast(msg) { const toast = document.getElementById("toast"); document.getElementById("toastMsg").innerText = msg; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 3000); }
+    
+    // UI Elements
+    const searchInput = document.getElementById("searchInput");
+    const clearBtn = document.getElementById("clearInputBtn");
+    const autoClear = document.getElementById("autoClearCheckbox");
+    
+    searchInput.addEventListener("input", () => { clearBtn.classList.toggle("show", searchInput.value.length > 0); });
+    clearBtn.onclick = () => { searchInput.value = ""; clearBtn.classList.remove("show"); searchInput.focus(); };
+    
+    async function performSearch() { const q = searchInput.value; if (q?.trim()) { const result = searchProduct(q); displayResult(result); if (autoClear.checked) { searchInput.value = ""; clearBtn.classList.remove("show"); } } }
+    
+    document.getElementById("verifyBtn").onclick = performSearch;
+    searchInput.onkeypress = e => { if (e.key === "Enter") performSearch(); };
+    
+    function updateStats() {
+        document.getElementById("productCount").innerText = productsBySku.size;
+        document.getElementById("lastUpdate").innerHTML = new Date().toLocaleTimeString();
+    }
+    
+    // Scanner
+    let scanner = null, scanning = false;
+    const scannerDiv = document.getElementById("scannerContainer");
+    document.getElementById("cameraBtn").onclick = async () => {
+        if (scanning) return;
+        if (!scanner) scanner = new Html5Qrcode("reader");
+        scannerDiv.classList.add("active");
+        try {
+            await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, text => {
+                searchInput.value = text;
+                document.getElementById("closeScanner").click();
+                performSearch();
+            }, () => {});
+            scanning = true;
+        } catch(e) { alert("Camera error"); scannerDiv.classList.remove("active"); }
+    };
+    document.getElementById("closeScanner").onclick = async () => {
+        if (scanner && scanning) { await scanner.stop(); scanning = false; }
+        scannerDiv.classList.remove("active");
+    };
+    
+    // Modal Upload
+    const modal = document.getElementById("uploadModal");
+    const modalPassword = document.getElementById("modalPassword");
+    const modalFile = document.getElementById("modalFile");
+    const modalError = document.getElementById("modalError");
+    const uploadProgress = document.getElementById("uploadProgress");
+    const progressBar = document.getElementById("progressBar");
+    const progressFill = document.getElementById("progressFill");
+    const progressPercent = document.getElementById("progressPercent");
+    
+    document.getElementById("uploadBtn").onclick = () => { modalPassword.value = ""; modalError.classList.remove("show"); uploadProgress.style.display = "none"; progressBar.classList.remove("active"); modal.classList.add("active"); };
+    document.getElementById("modalCancel").onclick = () => modal.classList.remove("active");
+    document.getElementById("modalConfirm").onclick = () => {
+        const pwd = modalPassword.value.trim();
+        if (pwd !== "Waltermart8001") { modalError.innerText = "❌ Incorrect password!"; modalError.classList.add("show"); return; }
+        modalFile.click();
+    };
+    
+    modalFile.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        uploadProgress.style.display = "block";
+        progressBar.classList.add("active");
+        modalError.classList.remove("show");
+        
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const newProducts = await parseCSVAndLoad(ev.target.result, (percent) => {
+                    progressFill.style.width = percent + "%";
+                    progressPercent.innerText = percent;
+                });
+                
+                await clearAllProducts();
+                await bulkInsertProducts(newProducts);
+                await loadAllProducts();
+                
+                uploadProgress.style.display = "none";
+                progressBar.classList.remove("active");
+                modal.classList.remove("active");
+                showToast(`✅ Loaded ${newProducts.length} products to IndexedDB!`);
+                performSearch();
+            } catch(err) {
+                modalError.innerText = `❌ ${err.message}`;
+                modalError.classList.add("show");
+                uploadProgress.style.display = "none";
+                progressBar.classList.remove("active");
+            }
+        };
+        reader.readAsText(file, "UTF-8");
+        modalFile.value = "";
+    };
+    modal.onclick = e => { if (e.target === modal) modal.classList.remove("active"); };
+    
+    // Reset Storage Modal
+    const resetModal = document.getElementById("resetConfirmModal");
+    const resetConfirmInput = document.getElementById("resetConfirmInput");
+    
+    document.getElementById("resetStorageBtn").onclick = () => {
+        resetConfirmInput.value = "";
+        resetModal.classList.add("active");
+    };
+    
+    document.getElementById("resetModalCancel").onclick = () => {
+        resetModal.classList.remove("active");
+    };
+    
+    document.getElementById("resetModalConfirm").onclick = async () => {
+        const confirmText = resetConfirmInput.value.trim();
+        if (confirmText === "RESET") {
+            await resetStorage();
+            resetModal.classList.remove("active");
+        } else {
+            alert('Type "RESET" to confirm deletion');
+        }
+    };
+    
+    // Reset to sample button
+    document.getElementById("resetBtn").onclick = async () => { 
+        if (confirm("Reset to sample data? This will replace your current data.")) { 
+            await loadSampleData(); 
+            performSearch(); 
+        } 
+    };
+    
+    resetModal.onclick = (e) => { if (e.target === resetModal) resetModal.classList.remove("active"); };
+    
+    // Initialize
+    openDB().then(async () => {
+        const count = await loadAllProducts();
+        if (count === 0) {
+            await loadSampleData();
+        }
+    }).catch(err => {
+        console.error('IndexedDB error:', err);
+        alert('Your browser may not support IndexedDB. Please use a modern browser.');
+    });
+</script>
+</body>
+</html>
