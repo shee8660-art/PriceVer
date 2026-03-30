@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Price Verifier Pro - Full Working Version</title>
-    <!-- Barcode Detection Library -->
-    <script src="https://unpkg.com/@zxing/library@0.18.6/index.min.js"></script>
+    <title>Price Verifier Pro - Full CSV Support</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -16,63 +14,14 @@
         .header h1 i { margin-right: 10px; }
         .sub { font-size: 0.85rem; opacity: 0.9; margin-top: 5px; }
         .promo-icon { background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
-        .camera-btn { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border: none; 
-            color: white; 
-            padding: 14px 20px; 
-            font-size: 1.1rem; 
-            font-weight: 600; 
-            border-radius: 60px; 
-            width: calc(100% - 3rem); 
-            margin: 1.5rem 1.5rem 0 1.5rem; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 12px; 
-            cursor: pointer; 
-        }
+        .camera-btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; padding: 14px 20px; font-size: 1.1rem; font-weight: 600; border-radius: 60px; width: calc(100% - 3rem); margin: 1.5rem 1.5rem 0 1.5rem; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
         @media (min-width: 768px) { .camera-btn { display: none; } .desktop-note { display: flex; } }
         .desktop-note { display: none; background: linear-gradient(135deg, #fef3c7, #fde68a); margin: 1rem 1.5rem; padding: 12px 16px; border-radius: 60px; align-items: center; justify-content: center; gap: 10px; color: #92400e; }
-        .scanner-container { 
-            background: #000; 
-            border-radius: 28px; 
-            padding: 0; 
-            margin: 0 1.5rem 1.5rem; 
-            display: none; 
-            overflow: hidden;
-            position: relative;
-        }
+        .scanner-container { background: #000; border-radius: 28px; padding: 0; margin: 0 1.5rem 1.5rem; display: none; overflow: hidden; position: relative; }
         .scanner-container.active { display: block; }
-        #video { 
-            width: 100%; 
-            height: auto; 
-            max-height: 400px;
-            object-fit: cover;
-        }
-        .scan-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 30%;
-            border: 2px solid #10b981;
-            border-radius: 20px;
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
-            pointer-events: none;
-        }
-        .close-scanner { 
-            background: #ef4444; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 40px; 
-            margin: 12px; 
-            cursor: pointer; 
-            width: calc(100% - 24px);
-            font-weight: 600;
-        }
+        #video { width: 100%; height: auto; max-height: 400px; object-fit: cover; }
+        .scan-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 30%; border: 2px solid #10b981; border-radius: 20px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none; }
+        .close-scanner { background: #ef4444; color: white; border: none; padding: 12px; border-radius: 40px; margin: 12px; cursor: pointer; width: calc(100% - 24px); font-weight: 600; }
         .search-area { background: #f8fafc; border-radius: 28px; padding: 1.2rem; margin: 1rem 1.5rem; }
         .smart-badge { background: #e2e8f0; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; }
         .input-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -125,7 +74,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Auto-Scan Barcode • Full CSV Support</p></div>
+        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Works with Your CSV Headers • Auto-Scan Barcode</p></div>
         <div class="promo-icon"><i class="fas fa-percent"></i></div>
     </div>
     
@@ -139,7 +88,7 @@
     </div>
     
     <div class="search-area">
-        <div class="smart-badge"><i class="fas fa-magic"></i> Auto-detects SKU or Barcode</div>
+        <div class="smart-badge"><i class="fas fa-magic"></i> Search by SKU or Barcode (UPC)</div>
         <div class="input-group">
             <div class="search-wrapper">
                 <input type="text" id="searchInput" placeholder="Enter SKU or barcode..." autocomplete="off">
@@ -159,11 +108,11 @@
         <div><i class="fas fa-database"></i> <span id="productCount">0</span> products</div>
         <div><i class="fas fa-clock"></i> <span id="lastUpdate">ready</span></div>
         <div class="action-buttons">
-            <button id="resetBtn" class="sample-data-btn"><i class="fas fa-redo"></i> Reset Sample</button>
+            <button id="resetBtn" class="sample-data-btn"><i class="fas fa-redo"></i> Reset to Sample</button>
         </div>
     </div>
     
-    <footer><i class="fas fa-upload"></i> Tap upload button to add CSV • Password: Waltermart8001</footer>
+    <footer><i class="fas fa-upload"></i> Upload CSV • Password: Waltermart8001</footer>
 </div>
 
 <button class="upload-btn" id="uploadBtn"><i class="fas fa-upload"></i></button>
@@ -186,7 +135,9 @@
             <button class="btn-cancel" id="modalCancel">Cancel</button>
             <button class="btn-confirm" id="modalConfirm">Upload CSV</button>
         </div>
-        <div style="font-size:0.7rem; margin-top:1rem; text-align:center;">CSV Format: Sku, Upc, Descr, RegPrice, PromoPrice, Qty1, Qty2, Method, Store, Dept</div>
+        <div style="font-size:0.7rem; margin-top:1rem; text-align:center;">
+            <strong>Your CSV Headers:</strong> CodAct, Store, Sku, Upc, Descr, LDescr, SDescr, Vatex, RegPrice, Sell_Unit, Vatex2, Price2, Remarks, Promo, Start, Stop, Event, Dti, Vendor, Dept, SDept, Class, SClass, Qty1, Qty2, PromoPrice, Method, PromoType, PriceGroup, SkuType, TaxCode
+        </div>
     </div>
 </div>
 
@@ -215,16 +166,48 @@
     let products = {};
     let productsByUpc = {};
     
-    // Sample products with all promo types
+    // Sample products (using your header format)
     const sampleData = {
-        "PRICE01": { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", reg_price: 37, promo_price: 34, qty1: 1, qty2: 0, method: 25, store: "Main", dept: "Grocery" },
-        "BUY201": { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", reg_price: 45, promo_price: 69, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Snacks" },
-        "TAKE401": { sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", reg_price: 65, promo_price: 65, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Canned" },
-        "BOGO01": { sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", reg_price: 350, promo_price: 175, qty1: 1, qty2: 0, method: 25, store: "Premium", dept: "Coffee" },
-        "BUY301": { sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", reg_price: 25, promo_price: 100, qty1: 5, qty2: 0, method: 1, store: "Main", dept: "Beverages" },
-        "PCT601": { sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", reg_price: 100, promo_price: 90, qty1: 1, qty2: 0, method: 0, store: "Main", dept: "General" },
-        "TAKE501": { sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", reg_price: 50, promo_price: 0, qty1: 1, qty2: 1, method: 0, store: "Main", dept: "Snacks" },
-        "CLR801": { sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", reg_price: 200, promo_price: 140, qty1: 1, qty2: 0, method: 25, store: "Clearance", dept: "Sale" }
+        "PRICE01": { 
+            sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", 
+            reg_price: 37, promo_price: 34, qty1: 1, qty2: 0, method: 25,
+            store: "Main", dept: "Grocery", sell_unit: "Pack", vendor: "Nestle"
+        },
+        "BUY201": { 
+            sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", 
+            reg_price: 45, promo_price: 69, qty1: 2, qty2: 0, method: 1,
+            store: "Main", dept: "Snacks", sell_unit: "Bag", vendor: "Lays"
+        },
+        "TAKE401": { 
+            sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", 
+            reg_price: 65, promo_price: 65, qty1: 2, qty2: 0, method: 1,
+            store: "Main", dept: "Canned", sell_unit: "Can", vendor: "Century"
+        },
+        "BOGO01": { 
+            sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", 
+            reg_price: 350, promo_price: 175, qty1: 1, qty2: 0, method: 25,
+            store: "Premium", dept: "Coffee", sell_unit: "Box", vendor: "Starbucks"
+        },
+        "BUY301": { 
+            sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", 
+            reg_price: 25, promo_price: 100, qty1: 5, qty2: 0, method: 1,
+            store: "Main", dept: "Beverages", sell_unit: "Pack", vendor: "Absolute"
+        },
+        "PCT601": { 
+            sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", 
+            reg_price: 100, promo_price: 90, qty1: 1, qty2: 0, method: 0,
+            store: "Main", dept: "General", sell_unit: "Piece", vendor: "Generic"
+        },
+        "TAKE501": { 
+            sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", 
+            reg_price: 50, promo_price: 0, qty1: 1, qty2: 1, method: 0,
+            store: "Main", dept: "Snacks", sell_unit: "Pack", vendor: "SnackCo"
+        },
+        "CLR801": { 
+            sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", 
+            reg_price: 200, promo_price: 140, qty1: 1, qty2: 0, method: 25,
+            store: "Clearance", dept: "Sale", sell_unit: "Piece", vendor: "Clearance"
+        }
     };
     
     function loadSampleData() {
@@ -253,7 +236,7 @@
     
     function detectPromo(p) {
         const reg = p.reg_price, promo = p.promo_price, qty1 = p.qty1 || 1, qty2 = p.qty2 || 0, method = p.method || 0;
-        if (!promo && promo !== 0) return null;
+        if (promo === undefined || promo === null) return null;
         
         // BUY 1 TAKE 1
         if (method === 1 && qty1 === 2 && promo === reg) {
@@ -262,7 +245,8 @@
         // Buy X for Price
         if (method === 1 && qty1 > 1) {
             const savings = (reg * qty1 - promo).toFixed(2);
-            return { badgeClass: "buy-x-price", name: "Multi-Buy", promoText: `Buy ${qty1} for ${formatCurrency(promo)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg*qty1-promo)/(reg*qty1)*100).toFixed(1) };
+            const discount = ((reg * qty1 - promo) / (reg * qty1) * 100).toFixed(1);
+            return { badgeClass: "buy-x-price", name: "Multi-Buy", promoText: `Buy ${qty1} for ${formatCurrency(promo)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: discount };
         }
         // 50% OFF
         if (method === 25 && promo === reg/2) {
@@ -272,7 +256,8 @@
         // Price Off
         if (method === 25 && promo < reg) {
             const savings = (reg - promo).toFixed(2);
-            return { badgeClass: "price-off", name: "Price Off", promoText: `Price Off - Was ${formatCurrency(reg)}, Now ${formatCurrency(promo)}, Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg-promo)/reg*100).toFixed(1) };
+            const discount = ((reg - promo) / reg * 100).toFixed(1);
+            return { badgeClass: "price-off", name: "Price Off", promoText: `Price Off - Was ${formatCurrency(reg)}, Now ${formatCurrency(promo)}, Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: discount };
         }
         // Buy X Take Y Free
         if (qty2 > 0 && promo === 0) {
@@ -282,7 +267,8 @@
         // Percentage Discount
         if (promo !== null && promo < reg) {
             const savings = (reg - promo).toFixed(2);
-            return { badgeClass: "price-off", name: "Percentage Discount", promoText: `${((reg-promo)/reg*100).toFixed(1)}% Off - Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: ((reg-promo)/reg*100).toFixed(1) };
+            const discount = ((reg - promo) / reg * 100).toFixed(1);
+            return { badgeClass: "price-off", name: "Percentage Discount", promoText: `${discount}% Off - Save ${formatCurrency(savings)}`, regularPrice: reg, promoPrice: promo, savings: savings, discountPercent: discount };
         }
         return null;
     }
@@ -299,7 +285,7 @@
         const div = document.getElementById("resultArea");
         if (!r) { 
             div.style.display = "block"; 
-            div.innerHTML = `<div style="padding:16px;text-align:center"><i class="fas fa-search" style="font-size:2rem;color:#ef4444"></i><br><strong>Product Not Found</strong><br><small>Try: PRICE01, BUY201, TAKE401, BOGO01, BUY301, PCT601, TAKE501, CLR801</small></div>`; 
+            div.innerHTML = `<div style="padding:16px;text-align:center"><i class="fas fa-search" style="font-size:2rem;color:#ef4444"></i><br><strong>Product Not Found</strong><br><small>Try a SKU from your uploaded CSV</small></div>`; 
             return; 
         }
         const p = r.product;
@@ -311,14 +297,26 @@
             promoHtml = `<div class="price-grid"><div><div class="price-label">Regular Price</div><div class="price-value">${formatCurrency(p.reg_price)}</div></div></div>`; 
         }
         div.style.display = "block";
-        div.innerHTML = `<div class="product-name">${escapeHtml(p.descr)}</div><div><span class="sku-badge"><i class="fas fa-hashtag"></i> SKU: ${escapeHtml(p.sku)}</span>${p.upc ? `<span class="sku-badge"><i class="fas fa-barcode"></i> UPC: ${escapeHtml(p.upc)}</span>` : ''}</div>${promoHtml}<div style="margin-top:12px; font-size:0.7rem; text-align:center;"><i class="fas ${r.type === 'SKU' ? 'fa-hashtag' : 'fa-barcode'}"></i> Searched by ${r.type}: ${escapeHtml(r.value)}</div>`;
+        div.innerHTML = `
+            <div class="product-name">${escapeHtml(p.descr)}</div>
+            <div>
+                <span class="sku-badge"><i class="fas fa-hashtag"></i> SKU: ${escapeHtml(p.sku)}</span>
+                ${p.upc ? `<span class="sku-badge"><i class="fas fa-barcode"></i> UPC: ${escapeHtml(p.upc)}</span>` : ''}
+                ${p.sell_unit ? `<span class="sku-badge"><i class="fas fa-weight-hanging"></i> Unit: ${escapeHtml(p.sell_unit)}</span>` : ''}
+            </div>
+            ${p.store ? `<div style="margin:8px 0; font-size:0.8rem; color:#64748b"><i class="fas fa-store"></i> ${escapeHtml(p.store)} ${p.dept ? `• ${escapeHtml(p.dept)}` : ''} ${p.vendor ? `• ${escapeHtml(p.vendor)}` : ''}</div>` : ''}
+            ${promoHtml}
+            <div style="margin-top:12px; font-size:0.7rem; text-align:center; color:#64748b">
+                <i class="fas ${r.type === 'SKU' ? 'fa-hashtag' : 'fa-barcode'}"></i> Searched by ${r.type}: ${escapeHtml(r.value)}
+            </div>
+        `;
     }
     
     function escapeHtml(s) { if (!s) return ""; return String(s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
     function showToast(msg) { const toast = document.getElementById("toast"); document.getElementById("toastMsg").innerText = msg; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 3000); }
     
     // ============================================
-    // BARCODE SCANNER WITH AUTO-DETECTION
+    // BARCODE SCANNER
     // ============================================
     
     let video = document.getElementById('video');
@@ -327,26 +325,20 @@
     let scannerActive = false;
     let barcodeDetector = null;
     
-    // Initialize barcode detector
     async function initBarcodeDetector() {
         if ('BarcodeDetector' in window) {
             try {
                 barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
                 return true;
-            } catch (e) {
-                console.log("Barcode detector not fully supported");
-            }
+            } catch (e) { return false; }
         }
         return false;
     }
     
     async function startScanner() {
         if (scannerActive) return;
-        
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { exact: "environment" } } 
-            });
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             video.srcObject = stream;
             await video.play();
             scannerActive = true;
@@ -355,7 +347,6 @@
             startScanning();
             showToast("Camera ready. Auto-scanning barcodes...");
         } catch (err) {
-            // Try without exact facing mode
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
@@ -365,17 +356,12 @@
                 await initBarcodeDetector();
                 startScanning();
                 showToast("Camera ready. Auto-scanning barcodes...");
-            } catch (e) {
-                alert("Camera error: " + e.message);
-            }
+            } catch (e) { alert("Camera error: " + e.message); }
         }
     }
     
     function stopScanner() {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
+        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
         scannerActive = false;
         scanning = false;
         document.getElementById("scannerContainer").classList.remove("active");
@@ -384,7 +370,6 @@
     async function startScanning() {
         if (scanning) return;
         scanning = true;
-        
         while (scannerActive && scanning) {
             if (barcodeDetector && video.videoWidth > 0) {
                 try {
@@ -399,9 +384,7 @@
                             break;
                         }
                     }
-                } catch (e) {
-                    // Continue scanning
-                }
+                } catch (e) {}
             }
             await new Promise(r => setTimeout(r, 100));
         }
@@ -411,75 +394,92 @@
     document.getElementById("closeScanner").onclick = stopScanner;
     
     // ============================================
-    // CSV UPLOAD - FULL SUPPORT
+    // CSV UPLOAD - WITH YOUR EXACT HEADERS
     // ============================================
     
     function parseCSVAndLoad(csvText) {
         const lines = csvText.split(/\r?\n/);
         if (lines.length < 2) throw new Error("Empty CSV file");
         
-        const headers = lines[0].split(",").map(h => h.trim().replace(/^\uFEFF/, '').toLowerCase());
+        // Get headers from first line (tab-separated as per your format)
+        const headers = lines[0].split(/\t|,/).map(h => h.trim().replace(/^\uFEFF/, '').toLowerCase());
+        console.log("Headers found:", headers);
+        
         const newProducts = {};
         let count = 0;
-        let errors = [];
+        
+        // Find column indices
+        const idxSku = headers.findIndex(h => h === "sku");
+        const idxUpc = headers.findIndex(h => h === "upc");
+        const idxDescr = headers.findIndex(h => h === "descr");
+        const idxRegPrice = headers.findIndex(h => h === "regprice");
+        const idxPromoPrice = headers.findIndex(h => h === "promoprice");
+        const idxQty1 = headers.findIndex(h => h === "qty1");
+        const idxQty2 = headers.findIndex(h => h === "qty2");
+        const idxMethod = headers.findIndex(h => h === "method");
+        const idxStore = headers.findIndex(h => h === "store");
+        const idxDept = headers.findIndex(h => h === "dept");
+        const idxVendor = headers.findIndex(h => h === "vendor");
+        const idxSellUnit = headers.findIndex(h => h === "sell_unit");
+        const idxStart = headers.findIndex(h => h === "start");
+        const idxStop = headers.findIndex(h => h === "stop");
         
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
             
-            // Handle quoted values
-            const values = [];
-            let inQuote = false;
-            let current = "";
-            for (let ch of line) {
-                if (ch === '"') {
-                    inQuote = !inQuote;
-                } else if (ch === ',' && !inQuote) {
-                    values.push(current.trim());
-                    current = "";
-                } else {
-                    current += ch;
-                }
-            }
-            values.push(current.trim());
-            
-            if (values.length < 4) {
-                errors.push(`Row ${i}: Not enough columns`);
-                continue;
-            }
+            // Split by tab (your format uses tabs)
+            const values = line.split(/\t|,/);
+            if (values.length < 4) continue;
             
             // Clean values
             const cleanValues = values.map(v => v.replace(/^"|"$/g, '').trim());
             
-            const product = {
-                sku: cleanValues[0],
-                upc: cleanValues[1],
-                descr: cleanValues[2],
-                reg_price: parseFloat(cleanValues[3]),
-                promo_price: cleanValues[4] && cleanValues[4] !== '' ? parseFloat(cleanValues[4]) : null,
-                qty1: cleanValues[5] && cleanValues[5] !== '' ? parseInt(cleanValues[5]) : 1,
-                qty2: cleanValues[6] && cleanValues[6] !== '' ? parseInt(cleanValues[6]) : 0,
-                method: cleanValues[7] && cleanValues[7] !== '' ? parseInt(cleanValues[7]) : 0,
-                store: cleanValues[8] || null,
-                dept: cleanValues[9] || null
-            };
+            // Map by index
+            const sku = idxSku !== -1 && cleanValues[idxSku] ? cleanValues[idxSku] : "";
+            const upc = idxUpc !== -1 && cleanValues[idxUpc] ? cleanValues[idxUpc] : "";
+            const descr = idxDescr !== -1 && cleanValues[idxDescr] ? cleanValues[idxDescr] : "";
+            const reg_price = idxRegPrice !== -1 ? parseFloat(cleanValues[idxRegPrice]) : 0;
+            const promo_price = idxPromoPrice !== -1 && cleanValues[idxPromoPrice] ? parseFloat(cleanValues[idxPromoPrice]) : null;
+            const qty1 = idxQty1 !== -1 && cleanValues[idxQty1] ? parseInt(cleanValues[idxQty1]) : 1;
+            const qty2 = idxQty2 !== -1 && cleanValues[idxQty2] ? parseInt(cleanValues[idxQty2]) : 0;
+            const method = idxMethod !== -1 && cleanValues[idxMethod] ? parseInt(cleanValues[idxMethod]) : 0;
+            const store = idxStore !== -1 && cleanValues[idxStore] ? cleanValues[idxStore] : null;
+            const dept = idxDept !== -1 && cleanValues[idxDept] ? cleanValues[idxDept] : null;
+            const vendor = idxVendor !== -1 && cleanValues[idxVendor] ? cleanValues[idxVendor] : null;
+            const sell_unit = idxSellUnit !== -1 && cleanValues[idxSellUnit] ? cleanValues[idxSellUnit] : null;
+            const start_date = idxStart !== -1 && cleanValues[idxStart] ? cleanValues[idxStart] : null;
+            const stop_date = idxStop !== -1 && cleanValues[idxStop] ? cleanValues[idxStop] : null;
             
-            if (product.sku && !isNaN(product.reg_price) && product.descr && product.reg_price > 0) {
-                newProducts[product.sku] = product;
+            if (sku && !isNaN(reg_price) && descr && reg_price > 0) {
+                newProducts[sku] = {
+                    sku: sku,
+                    upc: upc,
+                    descr: descr,
+                    reg_price: reg_price,
+                    promo_price: promo_price,
+                    qty1: qty1,
+                    qty2: qty2,
+                    method: method,
+                    store: store,
+                    dept: dept,
+                    vendor: vendor,
+                    sell_unit: sell_unit,
+                    start_date: start_date,
+                    stop_date: stop_date
+                };
                 count++;
-            } else {
-                errors.push(`Row ${i}: Invalid data - SKU: ${product.sku}, Price: ${product.reg_price}, Desc: ${product.descr}`);
             }
         }
         
         if (count === 0) {
-            throw new Error(`No valid products found. Errors: ${errors.slice(0, 3).join('; ')}`);
+            throw new Error("No valid products found. Check that your CSV has columns: Sku, Upc, Descr, RegPrice");
         }
         
         products = newProducts;
         rebuildIndex();
         updateStats();
-        return { count, errors: errors.slice(0, 5) };
+        return count;
     }
     
     // Modal Upload
@@ -497,7 +497,6 @@
     };
     document.getElementById("modalCancel").onclick = () => modal.classList.remove("active");
     
-    // Preview CSV before upload
     modalFile.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -505,7 +504,7 @@
         const reader = new FileReader();
         reader.onload = (ev) => {
             const preview = ev.target.result.split('\n').slice(0, 5).join('\n');
-            uploadPreview.innerHTML = `<strong>Preview (first 5 rows):</strong><br><pre style="font-size:0.65rem; overflow-x:auto;">${escapeHtml(preview)}</pre>`;
+            uploadPreview.innerHTML = `<strong>Preview (first 5 rows):</strong><br><pre style="font-size:0.65rem; overflow-x:auto; white-space:pre-wrap;">${escapeHtml(preview)}</pre>`;
             uploadPreview.classList.add("show");
         };
         reader.readAsText(file, "UTF-8");
@@ -528,13 +527,11 @@
         const reader = new FileReader();
         reader.onload = (ev) => {
             try {
-                const result = parseCSVAndLoad(ev.target.result);
+                const count = parseCSVAndLoad(ev.target.result);
                 modal.classList.remove("active");
-                showToast(`✅ Loaded ${result.count} products!`);
-                if (result.errors.length > 0) {
-                    console.log("Warnings:", result.errors);
-                }
+                showToast(`✅ Loaded ${count} products from ${file.name}!`);
                 performSearch();
+                modalFile.value = "";
             } catch(err) {
                 modalError.innerText = `❌ ${err.message}`;
                 modalError.style.display = "block";
@@ -590,7 +587,7 @@
     // Initialize
     loadSampleData();
     initBarcodeDetector();
-    showToast("✅ App ready! Tap 'Scan Barcode' to auto-scan");
+    showToast("✅ App ready! Upload your CSV file");
 </script>
 </body>
 </html>
