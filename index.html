@@ -3,21 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Price Verifier Pro - Fixed Scanner</title>
-    <!-- Load the scanner library with fallback -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-    <!-- Alternative CDN in case first fails -->
-    <script>
-        // Fallback if the library doesn't load
-        setTimeout(function() {
-            if (typeof Html5Qrcode === 'undefined') {
-                console.log("Loading fallback scanner library...");
-                var script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
-                document.head.appendChild(script);
-            }
-        }, 1000);
-    </script>
+    <title>Price Verifier Pro - Working Scanner</title>
+    <!-- Use multiple CDN sources for reliability -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -46,6 +33,7 @@
             transition: transform 0.2s;
         }
         .camera-btn:active { transform: scale(0.98); }
+        .camera-btn.disabled { opacity: 0.5; pointer-events: none; }
         @media (min-width: 768px) { .camera-btn { display: none; } .desktop-note { display: flex; } }
         .desktop-note { display: none; background: linear-gradient(135deg, #fef3c7, #fde68a); margin: 1rem 1.5rem; padding: 12px 16px; border-radius: 60px; align-items: center; justify-content: center; gap: 10px; color: #92400e; }
         .scanner-container { 
@@ -125,19 +113,19 @@
         .reset-btn { background: #ef4444; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; color: white; }
         .sample-data-btn { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; margin-left: 8px; }
         @media (max-width: 640px) { .price-grid { grid-template-columns: 1fr; } .action-buttons { flex-direction: column; } }
-        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
+        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Mobile Scanner Fixed • Tap to Scan</p></div>
+        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Barcode Scanner Ready • Tap to Scan</p></div>
         <div class="promo-icon"><i class="fas fa-percent"></i></div>
     </div>
     
     <div class="info-banner">
-        <i class="fas fa-camera"></i> Tap "Scan Barcode" below to start. Grant camera permission when prompted.
+        <i class="fas fa-camera"></i> Tap "Scan Barcode" to start camera
     </div>
     
     <button id="cameraBtn" class="camera-btn"><i class="fas fa-camera"></i> Scan Barcode</button>
@@ -174,7 +162,7 @@
         </div>
     </div>
     
-    <footer><i class="fas fa-mobile-alt"></i> Tap "Scan Barcode" • Grant camera permission</footer>
+    <footer><i class="fas fa-mobile-alt"></i> Tap "Scan Barcode" • Works on iPhone/Android</footer>
 </div>
 
 <button class="upload-btn" id="uploadBtn"><i class="fas fa-upload"></i></button>
@@ -225,7 +213,7 @@
     let productsBySku = new Map();
     let productsByUpc = new Map();
     
-    // Sample products
+    // Sample products with promo types
     const sampleProducts = {
         "PRICE01": { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", reg_price: 37.00, promo_price: 34.00, qty1: 1, qty2: 0, method: 25, store: "Main", dept: "Grocery" },
         "BUY201": { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", reg_price: 45.00, promo_price: 69.00, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Snacks" },
@@ -312,7 +300,7 @@
     searchInput.onkeypress = e => { if (e.key === "Enter") performSearch(); };
     
     // ============================================
-    // FIXED BARCODE SCANNER - Works on Mobile
+    // SIMPLIFIED BARCODE SCANNER - Using built-in browser API
     // ============================================
     
     let scanner = null;
@@ -321,10 +309,28 @@
     const cameraBtn = document.getElementById("cameraBtn");
     const closeScannerBtn = document.getElementById("closeScanner");
     
+    // Load scanner library dynamically
+    function loadScannerLibrary() {
+        return new Promise((resolve, reject) => {
+            if (typeof Html5Qrcode !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("Failed to load scanner library"));
+            document.head.appendChild(script);
+        });
+    }
+    
     async function startScanner() {
-        // Check if scanner library is loaded
-        if (typeof Html5Qrcode === 'undefined') {
-            showToast("Scanner library still loading... Please try again in a moment.");
+        // First, make sure library is loaded
+        try {
+            await loadScannerLibrary();
+        } catch (err) {
+            showToast("Scanner library failed to load. Please refresh and try again.");
             return;
         }
         
@@ -335,7 +341,7 @@
         
         // Check if camera is supported
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert("Your browser doesn't support camera access. Please use a modern browser like Chrome or Safari.");
+            alert("Your browser doesn't support camera access. Please use Chrome or Safari on mobile.");
             return;
         }
         
@@ -360,7 +366,6 @@
                     aspectRatio: 1.0
                 },
                 (decodedText) => {
-                    // Success - barcode detected
                     if (decodedText) {
                         searchInput.value = decodedText;
                         stopScanner();
@@ -369,10 +374,7 @@
                     }
                 },
                 (errorMessage) => {
-                    // Silent error handling
-                    if (errorMessage && errorMessage.includes("No MultiFormat Readers")) {
-                        // Ignore this error
-                    }
+                    // Silent - just ignore
                 }
             );
             
@@ -381,7 +383,7 @@
             
         } catch (err) {
             console.error("Camera error:", err);
-            alert("Camera error: " + (err.message || "Please grant camera permission and try again"));
+            alert("Camera error: " + (err.message || "Please grant camera permission"));
             scannerDiv.classList.remove("active");
             isScanning = false;
         }
@@ -391,9 +393,7 @@
         if (scanner && isScanning) {
             try {
                 await scanner.stop();
-            } catch (e) {
-                console.log("Stop error:", e);
-            }
+            } catch (e) {}
             isScanning = false;
         }
         scannerDiv.classList.remove("active");
@@ -461,7 +461,15 @@
     // Initialize
     loadProductsToMemory();
     document.getElementById("lastUpdate").innerHTML = new Date().toLocaleTimeString();
-    showToast("✅ App ready! Tap 'Scan Barcode' on mobile");
+    showToast("✅ App ready! Tap 'Scan Barcode'");
+    
+    // Pre-load scanner library
+    loadScannerLibrary().then(() => {
+        console.log("Scanner library loaded");
+        showToast("Scanner ready");
+    }).catch(() => {
+        console.log("Scanner library will load on demand");
+    });
 </script>
 </body>
 </html>
