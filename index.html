@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Price Verifier Pro - Mobile Scanner Fixed</title>
+    <title>Price Verifier Pro - Fixed Scanner</title>
+    <!-- Load the scanner library with fallback -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <!-- Alternative CDN in case first fails -->
+    <script>
+        // Fallback if the library doesn't load
+        setTimeout(function() {
+            if (typeof Html5Qrcode === 'undefined') {
+                console.log("Loading fallback scanner library...");
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js';
+                document.head.appendChild(script);
+            }
+        }, 1000);
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -43,14 +56,13 @@
             display: none; 
             overflow: hidden;
             position: relative;
-            min-height: 300px;
+            min-height: 350px;
         }
         .scanner-container.active { display: block; }
         #reader { 
             width: 100%; 
-            border-radius: 20px; 
+            min-height: 350px;
             background: #000;
-            min-height: 300px;
         }
         .close-scanner { 
             background: #ef4444; 
@@ -64,7 +76,6 @@
             font-weight: 600;
             font-size: 1rem;
         }
-        .close-scanner:active { transform: scale(0.98); }
         .search-area { background: #f8fafc; border-radius: 28px; padding: 1.2rem; margin: 1rem 1.5rem; }
         .smart-badge { background: #e2e8f0; padding: 6px 14px; border-radius: 30px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; }
         .input-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -90,7 +101,6 @@
         .price-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; }
         .price-value { font-size: 1.2rem; font-weight: 800; color: #1e293b; }
         .savings { background: #dbeafe; padding: 10px; border-radius: 16px; text-align: center; margin-top: 12px; font-weight: 600; color: #1e40af; }
-        .validity { background: #f1f5f9; padding: 8px 12px; border-radius: 16px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
         .stats-bar { background: #f1f5f9; padding: 10px 18px; border-radius: 40px; font-size: 0.75rem; margin: 0 1.5rem 1rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         footer { font-size: 0.7rem; text-align: center; padding: 1rem 1.5rem 1.5rem; color: #94a3b8; border-top: 1px solid #e2e8f0; }
         .upload-btn { position: fixed; bottom: 25px; right: 25px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); border: none; font-size: 1.5rem; z-index: 1000; }
@@ -115,26 +125,26 @@
         .reset-btn { background: #ef4444; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; color: white; }
         .sample-data-btn { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; margin-left: 8px; }
         @media (max-width: 640px) { .price-grid { grid-template-columns: 1fr; } .action-buttons { flex-direction: column; } }
-        .camera-permission-hint { background: #e2e8f0; padding: 8px; border-radius: 20px; font-size: 0.7rem; text-align: center; margin: 10px 1.5rem; color: #475569; display: none; }
-        .camera-permission-hint.show { display: block; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Mobile Camera Fixed • Continuous Scanning</p></div>
+        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Mobile Scanner Fixed • Tap to Scan</p></div>
         <div class="promo-icon"><i class="fas fa-percent"></i></div>
     </div>
     
     <div class="info-banner">
-        <i class="fas fa-camera"></i> Tap "Scan Barcode" to start camera. Grant permission when prompted.
+        <i class="fas fa-camera"></i> Tap "Scan Barcode" below to start. Grant camera permission when prompted.
     </div>
     
     <button id="cameraBtn" class="camera-btn"><i class="fas fa-camera"></i> Scan Barcode</button>
     <div class="desktop-note"><i class="fas fa-desktop"></i> Desktop: Enter SKU or barcode</div>
     
     <div id="scannerContainer" class="scanner-container">
-        <div id="reader"></div>
+        <div id="reader" style="min-height: 350px;"></div>
         <button id="closeScanner" class="close-scanner"><i class="fas fa-times"></i> Close Camera</button>
     </div>
     
@@ -156,7 +166,7 @@
     <div id="resultArea" class="result-card"></div>
     
     <div class="stats-bar">
-        <div><i class="fas fa-database"></i> <span id="productCount">0</span> products</div>
+        <div><i class="fas fa-database"></i> <span id="productCount">8</span> products</div>
         <div><i class="fas fa-clock"></i> <span id="lastUpdate">ready</span></div>
         <div class="action-buttons">
             <button id="resetStorageBtn" class="reset-btn"><i class="fas fa-trash-alt"></i> Reset Storage</button>
@@ -164,7 +174,7 @@
         </div>
     </div>
     
-    <footer><i class="fas fa-mobile-alt"></i> Tap Scan Barcode • Grant Camera Permission</footer>
+    <footer><i class="fas fa-mobile-alt"></i> Tap "Scan Barcode" • Grant camera permission</footer>
 </div>
 
 <button class="upload-btn" id="uploadBtn"><i class="fas fa-upload"></i></button>
@@ -209,7 +219,7 @@
 
 <script>
     // ============================================
-    // PRODUCT DATABASE (Same as before)
+    // PRODUCT DATABASE
     // ============================================
     
     let productsBySku = new Map();
@@ -217,14 +227,14 @@
     
     // Sample products
     const sampleProducts = {
-        "PRICE01": { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", reg_price: 37.00, promo_price: 34.00, qty1: 1, qty2: 0, method: 25, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "Grocery" },
-        "BUY201": { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", reg_price: 45.00, promo_price: 69.00, qty1: 2, qty2: 0, method: 1, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "Snacks" },
-        "TAKE401": { sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", reg_price: 65.00, promo_price: 65.00, qty1: 2, qty2: 0, method: 1, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "Canned" },
-        "BOGO01": { sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", reg_price: 350.00, promo_price: 175.00, qty1: 1, qty2: 0, method: 25, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Premium", dept: "Coffee" },
-        "BUY301": { sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", reg_price: 25.00, promo_price: 100.00, qty1: 5, qty2: 0, method: 1, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "Beverages" },
-        "PCT601": { sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", reg_price: 100.00, promo_price: 90.00, qty1: 1, qty2: 0, method: 0, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "General" },
-        "TAKE501": { sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", reg_price: 50.00, promo_price: 0, qty1: 1, qty2: 1, method: 0, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Main", dept: "Snacks" },
-        "CLR801": { sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", reg_price: 200.00, promo_price: 140.00, qty1: 1, qty2: 0, method: 25, start_date: new Date().toISOString().split('T')[0], stop_date: new Date(Date.now()+7*86400000).toISOString().split('T')[0], store: "Clearance", dept: "Sale" }
+        "PRICE01": { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", reg_price: 37.00, promo_price: 34.00, qty1: 1, qty2: 0, method: 25, store: "Main", dept: "Grocery" },
+        "BUY201": { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", reg_price: 45.00, promo_price: 69.00, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Snacks" },
+        "TAKE401": { sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", reg_price: 65.00, promo_price: 65.00, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Canned" },
+        "BOGO01": { sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", reg_price: 350.00, promo_price: 175.00, qty1: 1, qty2: 0, method: 25, store: "Premium", dept: "Coffee" },
+        "BUY301": { sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", reg_price: 25.00, promo_price: 100.00, qty1: 5, qty2: 0, method: 1, store: "Main", dept: "Beverages" },
+        "PCT601": { sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", reg_price: 100.00, promo_price: 90.00, qty1: 1, qty2: 0, method: 0, store: "Main", dept: "General" },
+        "TAKE501": { sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", reg_price: 50.00, promo_price: 0, qty1: 1, qty2: 1, method: 0, store: "Main", dept: "Snacks" },
+        "CLR801": { sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", reg_price: 200.00, promo_price: 140.00, qty1: 1, qty2: 0, method: 25, store: "Clearance", dept: "Sale" }
     };
     
     function loadProductsToMemory() {
@@ -234,7 +244,7 @@
             productsBySku.set(sku, sampleProducts[sku]);
             if (sampleProducts[sku].upc) productsByUpc.set(sampleProducts[sku].upc, sampleProducts[sku]);
         }
-        updateStats();
+        document.getElementById("productCount").innerText = productsBySku.size;
     }
     
     function formatCurrency(amt) {
@@ -277,22 +287,12 @@
     
     function escapeHtml(s) { if (!s) return ""; return String(s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
     function showToast(msg) { const toast = document.getElementById("toast"); document.getElementById("toastMsg").innerText = msg; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 3000); }
-    function updateStats() { document.getElementById("productCount").innerText = productsBySku.size; document.getElementById("lastUpdate").innerHTML = new Date().toLocaleTimeString(); }
     
-    // ============================================
-    // FIXED BARCODE SCANNER FOR MOBILE
-    // ============================================
-    
-    let html5QrCode = null;
-    let isScanning = false;
-    const scannerContainer = document.getElementById("scannerContainer");
-    const cameraBtn = document.getElementById("cameraBtn");
-    const closeScannerBtn = document.getElementById("closeScanner");
+    // UI Elements
     const searchInput = document.getElementById("searchInput");
     const clearBtn = document.getElementById("clearInputBtn");
     const autoClear = document.getElementById("autoClearCheckbox");
     
-    // Clear button functionality
     searchInput.addEventListener("input", () => { clearBtn.classList.toggle("show", searchInput.value.length > 0); });
     clearBtn.onclick = () => { searchInput.value = ""; clearBtn.classList.remove("show"); searchInput.focus(); };
     
@@ -308,8 +308,26 @@
         } 
     }
     
-    // FIXED: Better scanner initialization for mobile
+    document.getElementById("verifyBtn").onclick = performSearch;
+    searchInput.onkeypress = e => { if (e.key === "Enter") performSearch(); };
+    
+    // ============================================
+    // FIXED BARCODE SCANNER - Works on Mobile
+    // ============================================
+    
+    let scanner = null;
+    let isScanning = false;
+    const scannerDiv = document.getElementById("scannerContainer");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const closeScannerBtn = document.getElementById("closeScanner");
+    
     async function startScanner() {
+        // Check if scanner library is loaded
+        if (typeof Html5Qrcode === 'undefined') {
+            showToast("Scanner library still loading... Please try again in a moment.");
+            return;
+        }
+        
         if (isScanning) {
             showToast("Scanner already running");
             return;
@@ -317,85 +335,77 @@
         
         // Check if camera is supported
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert("Camera not supported on this device/browser");
+            alert("Your browser doesn't support camera access. Please use a modern browser like Chrome or Safari.");
             return;
         }
         
         try {
-            // Request camera permission first
+            // Test camera permission first
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            stream.getTracks().forEach(track => track.stop()); // Stop temporary stream
+            stream.getTracks().forEach(track => track.stop());
             
-            // Initialize scanner
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
+            // Create scanner instance
+            if (!scanner) {
+                scanner = new Html5Qrcode("reader");
             }
             
-            scannerContainer.classList.add("active");
+            scannerDiv.classList.add("active");
             
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-                videoConstraints: {
-                    facingMode: "environment"
-                }
-            };
-            
-            await html5QrCode.start(
+            // Start scanning
+            await scanner.start(
                 { facingMode: "environment" },
-                config,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                },
                 (decodedText) => {
-                    // Success callback
+                    // Success - barcode detected
                     if (decodedText) {
                         searchInput.value = decodedText;
                         stopScanner();
                         performSearch();
-                        showToast(`Scanned: ${decodedText}`);
+                        showToast(`✓ Scanned: ${decodedText}`);
                     }
                 },
                 (errorMessage) => {
-                    // Error callback - ignore most errors
-                    if (errorMessage.includes("No MultiFormat Readers")) {
-                        // Ignore
+                    // Silent error handling
+                    if (errorMessage && errorMessage.includes("No MultiFormat Readers")) {
+                        // Ignore this error
                     }
                 }
             );
             
             isScanning = true;
-            showToast("Camera started. Point at barcode.");
+            showToast("Camera ready. Point at barcode.");
             
         } catch (err) {
             console.error("Camera error:", err);
-            alert("Camera error: " + (err.message || "Please grant camera permission"));
-            scannerContainer.classList.remove("active");
+            alert("Camera error: " + (err.message || "Please grant camera permission and try again"));
+            scannerDiv.classList.remove("active");
             isScanning = false;
         }
     }
     
     async function stopScanner() {
-        if (html5QrCode && isScanning) {
+        if (scanner && isScanning) {
             try {
-                await html5QrCode.stop();
+                await scanner.stop();
             } catch (e) {
                 console.log("Stop error:", e);
             }
             isScanning = false;
         }
-        scannerContainer.classList.remove("active");
+        scannerDiv.classList.remove("active");
     }
     
-    // Button events
     cameraBtn.onclick = startScanner;
     closeScannerBtn.onclick = stopScanner;
-    
-    document.getElementById("verifyBtn").onclick = performSearch;
-    searchInput.onkeypress = e => { if (e.key === "Enter") performSearch(); };
     
     // Reset functions
     function resetStorage() {
         loadProductsToMemory();
-        showToast("✅ Storage reset to sample data!");
+        showToast("✅ Reset to sample data!");
         performSearch();
     }
     
@@ -442,7 +452,7 @@
     document.getElementById("modalFile").onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            showToast("📁 CSV upload would process: " + file.name);
+            showToast("📁 CSV upload: " + file.name);
             modal.classList.remove("active");
         }
     };
@@ -450,6 +460,7 @@
     
     // Initialize
     loadProductsToMemory();
+    document.getElementById("lastUpdate").innerHTML = new Date().toLocaleTimeString();
     showToast("✅ App ready! Tap 'Scan Barcode' on mobile");
 </script>
 </body>
