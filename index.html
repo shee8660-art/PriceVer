@@ -3,48 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Waltermart Price Verifier</title>
+    <title>Price Verifier Pro - Keeps All Products</title>
+    <!-- ZXing library for cross-platform barcode scanning -->
+    <script src="https://unpkg.com/@zxing/library@0.18.6/index.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 16px; display: flex; justify-content: center; align-items: center; }
         .container { max-width: 800px; width: 100%; background: white; border-radius: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; }
         
-        /* Header */
         .header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; color: white; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 1.4rem; }
         .header h1 i { margin-right: 8px; }
         .sub { font-size: 0.75rem; opacity: 0.9; margin-top: 4px; }
         .promo-icon { background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
         
-        /* Camera Button */
-        .camera-btn { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border: none; 
-            color: white; 
-            padding: 14px 20px; 
-            font-size: 1rem; 
-            font-weight: 600; 
-            border-radius: 60px; 
-            width: calc(100% - 2rem); 
-            margin: 1rem 1rem 0 1rem; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-            cursor: pointer; 
-        }
+        .camera-btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; padding: 14px 20px; font-size: 1rem; font-weight: 600; border-radius: 60px; width: calc(100% - 2rem); margin: 1rem 1rem 0 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
         @media (min-width: 768px) { .camera-btn { display: none; } .desktop-note { display: flex; } }
         .desktop-note { display: none; background: linear-gradient(135deg, #fef3c7, #fde68a); margin: 1rem; padding: 10px 16px; border-radius: 60px; align-items: center; justify-content: center; gap: 8px; color: #92400e; font-size: 0.85rem; }
         
-        /* Scanner */
         .scanner-container { background: #000; border-radius: 24px; padding: 0; margin: 0 1rem 1rem; display: none; overflow: hidden; position: relative; }
         .scanner-container.active { display: block; }
         #video { width: 100%; height: auto; max-height: 350px; object-fit: cover; }
         .scan-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75%; height: 25%; border: 2px solid #10b981; border-radius: 16px; box-shadow: 0 0 0 1000px rgba(0,0,0,0.5); pointer-events: none; }
         .close-scanner { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 40px; margin: 10px; cursor: pointer; width: calc(100% - 20px); font-weight: 600; }
         
-        /* Search Area */
+        .manual-barcode-input { margin: 0 1rem 1rem; display: none; }
+        .manual-barcode-input.active { display: block; }
+        .manual-input-group { display: flex; gap: 10px; }
+        .manual-input-group input { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 0.9rem; outline: none; }
+        .manual-input-group button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 60px; padding: 0 20px; font-weight: 600; cursor: pointer; }
+        .iphone-note { background: #fef3c7; padding: 8px; border-radius: 16px; font-size: 0.7rem; text-align: center; margin-top: 8px; color: #92400e; display: none; }
+        .iphone-note.show { display: block; }
+        
         .search-area { background: #f8fafc; border-radius: 24px; padding: 1rem; margin: 1rem; }
         .smart-badge { background: #e2e8f0; padding: 5px 12px; border-radius: 30px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 12px; }
         .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -55,9 +46,7 @@
         .clear-input-btn.show { display: block; }
         #verifyBtn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 60px; padding: 0 24px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .auto-clear-toggle { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.7rem; color: #64748b; }
-        .auto-clear-toggle input { width: 14px; height: 14px; cursor: pointer; accent-color: #667eea; }
         
-        /* Result Card */
         .result-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 24px; padding: 1rem; margin: 1rem; border-left: 6px solid #10b981; display: none; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .product-name { font-size: 1.2rem; font-weight: 800; color: #1e3c72; margin-bottom: 6px; line-height: 1.3; }
@@ -78,20 +67,17 @@
         .info-label { color: #64748b; font-weight: 500; }
         .info-value { color: #1e293b; font-weight: 600; }
         
-        /* Stats Bar */
         .stats-bar { background: #f1f5f9; padding: 8px 16px; border-radius: 40px; font-size: 0.7rem; margin: 0 1rem 1rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .action-buttons { display: flex; gap: 8px; }
         .reset-btn { background: #ef4444; border: none; padding: 6px 14px; border-radius: 40px; cursor: pointer; font-size: 0.65rem; color: white; }
         .sample-data-btn { background: #f1f5f9; border: none; padding: 6px 14px; border-radius: 40px; cursor: pointer; font-size: 0.65rem; }
         footer { font-size: 0.65rem; text-align: center; padding: 0.8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; }
         
-        /* Upload Button */
         .upload-btn { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.2); border: none; font-size: 1.3rem; z-index: 1000; }
         
-        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 28px; padding: 1.5rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 28px; padding: 1.5rem; max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto; }
         .modal-header { text-align: center; margin-bottom: 1.2rem; }
         .modal-header i { font-size: 2.5rem; color: #f59e0b; }
         .modal-header h2 { font-size: 1.3rem; }
@@ -106,25 +92,23 @@
         .toast.show { display: flex; }
         .upload-preview { margin-top: 10px; font-size: 0.65rem; max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 12px; display: none; }
         .upload-preview.show { display: block; }
+        .import-stats { background: #e0f2fe; padding: 10px; border-radius: 16px; margin-top: 10px; font-size: 0.7rem; display: none; }
+        .import-stats.show { display: block; }
         
         @media (max-width: 640px) {
             body { padding: 12px; }
             .price-grid { grid-template-columns: 1fr; gap: 8px; }
             .info-grid { grid-template-columns: 1fr 1fr; }
-            .header h1 { font-size: 1.2rem; }
-            .product-name { font-size: 1rem; }
         }
         @media (max-width: 480px) {
             .info-grid { grid-template-columns: 1fr; }
-            .action-buttons { flex-direction: column; width: 100%; }
-            .stats-bar { flex-direction: column; align-items: center; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div><h1><i class="fas fa-tag"></i>Waltermart Price Verifier </h1><p class="sub">Waltermart Supermarket Price Verifier</p></div>
+        <div><h1><i class="fas fa-tag"></i> Price Verifier Pro</h1><p class="sub">Keeps All Products • Duplicate SKUs Allowed</p></div>
         <div class="promo-icon"><i class="fas fa-percent"></i></div>
     </div>
     
@@ -135,6 +119,16 @@
         <video id="video" autoplay playsinline></video>
         <div class="scan-overlay"></div>
         <button id="closeScanner" class="close-scanner"><i class="fas fa-times"></i> Close Camera</button>
+    </div>
+    
+    <div id="manualBarcodeInput" class="manual-barcode-input">
+        <div class="manual-input-group">
+            <input type="text" id="manualBarcode" placeholder="Enter barcode number manually...">
+            <button id="submitManualBarcode">Submit</button>
+        </div>
+        <div id="iphoneNote" class="iphone-note">
+            <i class="fas fa-info-circle"></i> iPhone users: If auto-scan doesn't work, you can type the barcode number above
+        </div>
     </div>
     
     <div class="search-area">
@@ -162,7 +156,7 @@
         </div>
     </div>
     
-    <footer><i class="fas fa-upload"></i> Upload CSV </footer>
+    <footer><i class="fas fa-upload"></i> Upload CSV • Password: Waltermart8001</footer>
 </div>
 
 <button class="upload-btn" id="uploadBtn"><i class="fas fa-upload"></i></button>
@@ -180,12 +174,13 @@
         </div>
         <input type="file" id="modalFile" accept=".csv">
         <div id="uploadPreview" class="upload-preview"></div>
+        <div id="importStats" class="import-stats"></div>
         <div id="modalError" class="modal-error"></div>
         <div class="modal-buttons">
             <button class="btn-cancel" id="modalCancel">Cancel</button>
             <button class="btn-confirm" id="modalConfirm">Upload CSV</button>
         </div>
-        <div style="font-size:0.65rem; margin-top:1rem; text-align:center;">Supports all columns including LDescr (Long Description)</div>
+        <div style="font-size:0.65rem; margin-top:1rem; text-align:center;">Supports duplicate SKUs with different barcodes</div>
     </div>
 </div>
 
@@ -208,75 +203,58 @@
 
 <script>
     // ============================================
-    // PRODUCT DATABASE
+    // PRODUCT DATABASE - Using Map with Unique Key (SKU + UPC)
     // ============================================
     
-    let products = {};
-    let productsByUpc = {};
+    let products = {};      // Key: sku + "|" + upc, Value: product
+    let productsBySku = new Map();     // For SKU search (returns first match)
+    let productsByUpc = new Map();     // For UPC search
     
-    // Sample products (with LDescr)
-    const sampleData = {
-        "PRICE01": { 
-            sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles", 
-            ldescr: "Premium Instant Noodles with special seasoning. Ready in 3 minutes. Perfect for quick meals.",
-            reg_price: 37, promo_price: 34, qty1: 1, qty2: 0, method: 25,
-            store: "Main", dept: "Grocery", sell_unit: "Pack", vendor: "Nestle"
-        },
-        "BUY201": { 
-            sku: "BUY201", upc: "2222222222222", descr: "Potato Chips", 
-            ldescr: "Crispy potato chips, lightly salted. Family size. Great for snacking.",
-            reg_price: 45, promo_price: 69, qty1: 2, qty2: 0, method: 1,
-            store: "Main", dept: "Snacks", sell_unit: "Bag", vendor: "Lays"
-        },
-        "TAKE401": { 
-            sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans", 
-            ldescr: "Premium canned beans in tomato sauce. Ready to eat. High in protein.",
-            reg_price: 65, promo_price: 65, qty1: 2, qty2: 0, method: 1,
-            store: "Main", dept: "Canned", sell_unit: "Can", vendor: "Century"
-        },
-        "BOGO01": { 
-            sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee", 
-            ldescr: "100% Arabica coffee beans. Rich and smooth taste. Medium roast.",
-            reg_price: 350, promo_price: 175, qty1: 1, qty2: 0, method: 25,
-            store: "Premium", dept: "Coffee", sell_unit: "Box", vendor: "Starbucks"
-        },
-        "BUY301": { 
-            sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack", 
-            ldescr: "Purified drinking water. 1 liter per bottle. 6 bottles per pack. Safe and clean.",
-            reg_price: 25, promo_price: 100, qty1: 5, qty2: 0, method: 1,
-            store: "Main", dept: "Beverages", sell_unit: "Pack", vendor: "Absolute"
-        },
-        "PCT601": { 
-            sku: "PCT601", upc: "6666666666666", descr: "General Items", 
-            ldescr: "Quality general merchandise. Satisfaction guaranteed.",
-            reg_price: 100, promo_price: 90, qty1: 1, qty2: 0, method: 0,
-            store: "Main", dept: "General", sell_unit: "Piece", vendor: "Generic"
-        },
-        "TAKE501": { 
-            sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle", 
-            ldescr: "Assorted snacks bundle. Perfect for parties and gatherings.",
-            reg_price: 50, promo_price: 0, qty1: 1, qty2: 1, method: 0,
-            store: "Main", dept: "Snacks", sell_unit: "Pack", vendor: "SnackCo"
-        },
-        "CLR801": { 
-            sku: "CLR801", upc: "8888888888888", descr: "Clearance Item", 
-            ldescr: "Last chance items! Limited stocks available. Grab while supplies last.",
-            reg_price: 200, promo_price: 140, qty1: 1, qty2: 0, method: 25,
-            store: "Clearance", dept: "Sale", sell_unit: "Piece", vendor: "Clearance"
-        }
-    };
+    const sampleData = [
+        { sku: "PRICE01", upc: "1111111111111", descr: "Instant Noodles - Price Off", ldescr: "Premium Instant Noodles with special seasoning.", reg_price: 37, promo_price: 34, qty1: 1, qty2: 0, method: 25, store: "Main", dept: "Grocery", sell_unit: "Pack", vendor: "Nestle" },
+        { sku: "BUY201", upc: "2222222222222", descr: "Potato Chips - Buy 2 for Price", ldescr: "Crispy potato chips, lightly salted.", reg_price: 45, promo_price: 69, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Snacks", sell_unit: "Bag", vendor: "Lays" },
+        { sku: "TAKE401", upc: "3333333333333", descr: "Canned Beans - Buy 1 Take 1", ldescr: "Premium canned beans in tomato sauce.", reg_price: 65, promo_price: 65, qty1: 2, qty2: 0, method: 1, store: "Main", dept: "Canned", sell_unit: "Can", vendor: "Century" },
+        { sku: "BOGO01", upc: "4444444444444", descr: "Premium Coffee - 50% Off", ldescr: "100% Arabica coffee beans. Rich and smooth taste.", reg_price: 350, promo_price: 175, qty1: 1, qty2: 0, method: 25, store: "Premium", dept: "Coffee", sell_unit: "Box", vendor: "Starbucks" },
+        { sku: "BUY301", upc: "5555555555555", descr: "Water 6-pack - Bulk Discount", ldescr: "Purified drinking water. 1 liter per bottle.", reg_price: 25, promo_price: 100, qty1: 5, qty2: 0, method: 1, store: "Main", dept: "Beverages", sell_unit: "Pack", vendor: "Absolute" },
+        { sku: "PCT601", upc: "6666666666666", descr: "General Items - 10% Off", ldescr: "Quality general merchandise.", reg_price: 100, promo_price: 90, qty1: 1, qty2: 0, method: 0, store: "Main", dept: "General", sell_unit: "Piece", vendor: "Generic" },
+        { sku: "TAKE501", upc: "7777777777777", descr: "Snack Bundle - Buy 1 Take 1 Free", ldescr: "Assorted snacks bundle.", reg_price: 50, promo_price: 0, qty1: 1, qty2: 1, method: 0, store: "Main", dept: "Snacks", sell_unit: "Pack", vendor: "SnackCo" },
+        { sku: "CLR801", upc: "8888888888888", descr: "Clearance Item - 30% Off", ldescr: "Last chance items! Limited stocks.", reg_price: 200, promo_price: 140, qty1: 1, qty2: 0, method: 25, store: "Clearance", dept: "Sale", sell_unit: "Piece", vendor: "Clearance" }
+    ];
     
     function loadSampleData() {
-        products = JSON.parse(JSON.stringify(sampleData));
-        rebuildIndex();
+        products = {};
+        productsBySku.clear();
+        productsByUpc.clear();
+        
+        for (const p of sampleData) {
+            const key = `${p.sku}|${p.upc}`;
+            products[key] = { ...p };
+            
+            // For search: store first product with this SKU (or add to array if needed)
+            if (!productsBySku.has(p.sku)) {
+                productsBySku.set(p.sku, p);
+            }
+            // For UPC search: always store by UPC (UPC should be unique)
+            if (p.upc) {
+                productsByUpc.set(p.upc, p);
+            }
+        }
         updateStats();
-        showToast("✅ Sample data loaded with 8 promo types");
+        showToast("✅ Sample data loaded");
     }
     
     function rebuildIndex() {
-        productsByUpc = {};
-        for (let sku in products) {
-            if (products[sku].upc) productsByUpc[products[sku].upc] = products[sku];
+        productsBySku.clear();
+        productsByUpc.clear();
+        
+        for (const key in products) {
+            const p = products[key];
+            if (!productsBySku.has(p.sku)) {
+                productsBySku.set(p.sku, p);
+            }
+            if (p.upc) {
+                productsByUpc.set(p.upc, p);
+            }
         }
     }
     
@@ -326,8 +304,15 @@
     function searchProduct(query) {
         if (!query?.trim()) return null;
         const q = query.trim().toUpperCase();
-        if (products[q]) return { product: products[q], type: "SKU", value: q };
-        if (productsByUpc[q]) return { product: productsByUpc[q], type: "Barcode", value: q };
+        
+        // Search by SKU first
+        if (productsBySku.has(q)) {
+            return { product: productsBySku.get(q), type: "SKU", value: q };
+        }
+        // Search by UPC
+        if (productsByUpc.has(q)) {
+            return { product: productsByUpc.get(q), type: "Barcode", value: q };
+        }
         return null;
     }
     
@@ -335,7 +320,7 @@
         const div = document.getElementById("resultArea");
         if (!r) { 
             div.style.display = "block"; 
-            div.innerHTML = `<div style="padding:16px;text-align:center"><i class="fas fa-search" style="font-size:2rem;color:#ef4444"></i><br><strong>Product Not Found</strong><br><small>Try a SKU from your uploaded CSV</small></div>`; 
+            div.innerHTML = `<div style="padding:16px;text-align:center"><i class="fas fa-search" style="font-size:2rem;color:#ef4444"></i><br><strong>Product Not Found</strong><br><small>Try a SKU or barcode from your CSV</small></div>`; 
             return; 
         }
         const p = r.product;
@@ -355,7 +340,6 @@
             promoHtml = `<div class="price-grid"><div><div class="price-label">Regular Price</div><div class="price-value">${formatCurrency(p.reg_price)}</div></div></div>`; 
         }
         
-        // Build info grid with all available details
         let infoHtml = '<div class="info-grid">';
         if (p.store) infoHtml += `<div class="info-item"><span class="info-label">Store:</span> <span class="info-value">${escapeHtml(p.store)}</span></div>`;
         if (p.dept) infoHtml += `<div class="info-item"><span class="info-label">Department:</span> <span class="info-value">${escapeHtml(p.dept)}</span></div>`;
@@ -390,80 +374,99 @@
     
     let video = document.getElementById('video');
     let stream = null;
-    let scanning = false;
     let scannerActive = false;
-    let barcodeDetector = null;
+    let codeReader = null;
+    let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     
-    async function initBarcodeDetector() {
-        if ('BarcodeDetector' in window) {
-            try {
-                barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-                return true;
-            } catch (e) { return false; }
-        }
-        return false;
+    if (isIOS) {
+        document.getElementById("iphoneNote").classList.add("show");
+        document.getElementById("manualBarcodeInput").classList.add("active");
+    }
+    
+    async function initZXingScanner() {
+        if (typeof ZXing === 'undefined') return false;
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        return true;
     }
     
     async function startScanner() {
         if (scannerActive) return;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            } catch (e) {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            }
             video.srcObject = stream;
             await video.play();
             scannerActive = true;
             document.getElementById("scannerContainer").classList.add("active");
-            await initBarcodeDetector();
-            startScanning();
-            showToast("Camera ready. Auto-scanning barcodes...");
-        } catch (err) {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                await video.play();
-                scannerActive = true;
-                document.getElementById("scannerContainer").classList.add("active");
-                await initBarcodeDetector();
-                startScanning();
-                showToast("Camera ready. Auto-scanning barcodes...");
-            } catch (e) { alert("Camera error: " + e.message); }
-        }
-    }
-    
-    function stopScanner() {
-        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
-        scannerActive = false;
-        scanning = false;
-        document.getElementById("scannerContainer").classList.remove("active");
-    }
-    
-    async function startScanning() {
-        if (scanning) return;
-        scanning = true;
-        while (scannerActive && scanning) {
-            if (barcodeDetector && video.videoWidth > 0) {
-                try {
-                    const barcodes = await barcodeDetector.detect(video);
-                    if (barcodes.length > 0) {
-                        const barcodeValue = barcodes[0].rawValue;
+            
+            if (typeof ZXing !== 'undefined' && ZXing.BrowserMultiFormatReader) {
+                await initZXingScanner();
+                codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+                    if (result) {
+                        const barcodeValue = result.text;
                         if (barcodeValue) {
                             showToast(`✓ Scanned: ${barcodeValue}`);
                             searchInput.value = barcodeValue;
                             stopScanner();
                             performSearch();
-                            break;
                         }
                     }
-                } catch (e) {}
+                });
+            } else if ('BarcodeDetector' in window) {
+                let barcodeDetector = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+                while (scannerActive) {
+                    if (video.videoWidth > 0) {
+                        try {
+                            const barcodes = await barcodeDetector.detect(video);
+                            if (barcodes.length > 0) {
+                                const barcodeValue = barcodes[0].rawValue;
+                                if (barcodeValue) {
+                                    showToast(`✓ Scanned: ${barcodeValue}`);
+                                    searchInput.value = barcodeValue;
+                                    stopScanner();
+                                    performSearch();
+                                    break;
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            } else {
+                document.getElementById("manualBarcodeInput").classList.add("active");
+                showToast("Auto-scan not supported. Use manual entry.");
             }
-            await new Promise(r => setTimeout(r, 100));
+            showToast("Camera ready. Point at barcode.");
+        } catch (err) {
+            alert("Camera error: " + (err.message || "Please grant camera permission"));
+            document.getElementById("manualBarcodeInput").classList.add("active");
         }
     }
     
+    function stopScanner() {
+        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+        if (codeReader) { try { codeReader.reset(); } catch(e) {} }
+        scannerActive = false;
+        document.getElementById("scannerContainer").classList.remove("active");
+    }
+    
+    document.getElementById("submitManualBarcode").onclick = () => {
+        const manualBarcode = document.getElementById("manualBarcode").value.trim();
+        if (manualBarcode) {
+            searchInput.value = manualBarcode;
+            document.getElementById("manualBarcode").value = "";
+            performSearch();
+        }
+    };
+    document.getElementById("manualBarcode").onkeypress = (e) => { if (e.key === "Enter") document.getElementById("submitManualBarcode").click(); };
     document.getElementById("cameraBtn").onclick = startScanner;
     document.getElementById("closeScanner").onclick = stopScanner;
     
     // ============================================
-    // CSV UPLOAD - WITH LDescr SUPPORT
+    // CSV UPLOAD - KEEPS ALL ROWS (No duplicate removal)
     // ============================================
     
     function parseCSVAndLoad(csvText) {
@@ -471,12 +474,15 @@
         if (lines.length < 2) throw new Error("Empty CSV file");
         
         const headers = lines[0].split(/\t|,/).map(h => h.trim().replace(/^\uFEFF/, '').toLowerCase());
-        console.log("Headers found:", headers);
-        
         const newProducts = {};
-        let count = 0;
+        let totalRows = 0;
+        let validRows = 0;
+        let invalidRows = 0;
+        let missingSkuCount = 0;
+        let missingPriceCount = 0;
+        let missingDescCount = 0;
+        let zeroPriceCount = 0;
         
-        // Find column indices for all your headers
         const idxSku = headers.findIndex(h => h === "sku");
         const idxUpc = headers.findIndex(h => h === "upc");
         const idxDescr = headers.findIndex(h => h === "descr");
@@ -496,10 +502,9 @@
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
+            totalRows++;
             
             const values = line.split(/\t|,/);
-            if (values.length < 4) continue;
-            
             const cleanValues = values.map(v => v.replace(/^"|"$/g, '').trim());
             
             const sku = idxSku !== -1 && cleanValues[idxSku] ? cleanValues[idxSku] : "";
@@ -518,22 +523,65 @@
             const start_date = idxStart !== -1 && cleanValues[idxStart] ? cleanValues[idxStart] : null;
             const stop_date = idxStop !== -1 && cleanValues[idxStop] ? cleanValues[idxStop] : null;
             
-            if (sku && !isNaN(reg_price) && descr && reg_price > 0) {
-                newProducts[sku] = {
-                    sku, upc, descr, ldescr, reg_price, promo_price,
-                    qty1, qty2, method, store, dept, vendor, sell_unit,
-                    start_date, stop_date
+            // Check for issues
+            let isValid = true;
+            if (!sku) { missingSkuCount++; isValid = false; }
+            if (!descr) { missingDescCount++; isValid = false; }
+            if (isNaN(reg_price) || reg_price <= 0) { 
+                if (reg_price === 0) zeroPriceCount++;
+                else missingPriceCount++;
+                isValid = false; 
+            }
+            
+            if (isValid) {
+                // Create unique key using SKU + UPC (both are required for uniqueness)
+                const key = `${sku}|${upc || 'NO_UPC'}`;
+                newProducts[key] = { 
+                    sku, upc, descr, ldescr, reg_price, promo_price, qty1, qty2, method, 
+                    store, dept, vendor, sell_unit, start_date, stop_date 
                 };
-                count++;
+                validRows++;
+            } else {
+                invalidRows++;
             }
         }
         
-        if (count === 0) throw new Error("No valid products found");
+        // Show detailed stats
+        const statsDiv = document.getElementById("importStats");
+        statsDiv.innerHTML = `
+            <strong>📊 Import Statistics:</strong><br>
+            📄 Total rows in CSV: ${totalRows.toLocaleString()}<br>
+            ✅ Valid products loaded: <span style="color:#10b981; font-weight:bold;">${validRows.toLocaleString()}</span><br>
+            ❌ Invalid/Skipped rows: ${invalidRows.toLocaleString()}<br>
+            ${missingSkuCount > 0 ? `   • Missing SKU: ${missingSkuCount}<br>` : ''}
+            ${missingDescCount > 0 ? `   • Missing Description: ${missingDescCount}<br>` : ''}
+            ${missingPriceCount > 0 ? `   • Invalid Price: ${missingPriceCount}<br>` : ''}
+            ${zeroPriceCount > 0 ? `   • Zero Price: ${zeroPriceCount}<br>` : ''}
+            📦 Total products in database: ${validRows.toLocaleString()}
+        `;
+        statsDiv.classList.add("show");
+        
+        if (validRows === 0) throw new Error("No valid products found. Please check your CSV format.");
         
         products = newProducts;
-        rebuildIndex();
+        
+        // Rebuild search indexes
+        productsBySku.clear();
+        productsByUpc.clear();
+        for (const key in products) {
+            const p = products[key];
+            // For SKU search: store first occurrence (or you could store array)
+            if (!productsBySku.has(p.sku)) {
+                productsBySku.set(p.sku, p);
+            }
+            // For UPC search: store by UPC (should be unique)
+            if (p.upc) {
+                productsByUpc.set(p.upc, p);
+            }
+        }
+        
         updateStats();
-        return count;
+        return { validRows, totalRows, invalidRows };
     }
     
     // Modal Upload
@@ -542,11 +590,13 @@
     const modalFile = document.getElementById("modalFile");
     const modalError = document.getElementById("modalError");
     const uploadPreview = document.getElementById("uploadPreview");
+    const importStats = document.getElementById("importStats");
     
     document.getElementById("uploadBtn").onclick = () => {
         modalPassword.value = "";
         modalError.style.display = "none";
         uploadPreview.classList.remove("show");
+        importStats.classList.remove("show");
         modal.classList.add("active");
     };
     document.getElementById("modalCancel").onclick = () => modal.classList.remove("active");
@@ -554,11 +604,10 @@
     modalFile.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
         const reader = new FileReader();
         reader.onload = (ev) => {
             const preview = ev.target.result.split('\n').slice(0, 5).join('\n');
-            uploadPreview.innerHTML = `<strong>Preview (first 5 rows):</strong><br><pre style="font-size:0.6rem; overflow-x:auto; white-space:pre-wrap;">${escapeHtml(preview)}</pre>`;
+            uploadPreview.innerHTML = `<strong>Preview (first 5 rows):</strong><br><pre style="font-size:0.6rem; overflow-x:auto;">${escapeHtml(preview)}</pre>`;
             uploadPreview.classList.add("show");
         };
         reader.readAsText(file, "UTF-8");
@@ -581,14 +630,15 @@
         const reader = new FileReader();
         reader.onload = (ev) => {
             try {
-                const count = parseCSVAndLoad(ev.target.result);
+                const stats = parseCSVAndLoad(ev.target.result);
                 modal.classList.remove("active");
-                showToast(`✅ Loaded ${count} products from ${file.name}!`);
+                showToast(`✅ Loaded ${stats.validRows.toLocaleString()} products! (${stats.invalidRows} rows skipped)`);
                 performSearch();
                 modalFile.value = "";
             } catch(err) {
                 modalError.innerText = `❌ ${err.message}`;
                 modalError.style.display = "block";
+                importStats.classList.remove("show");
             }
         };
         reader.readAsText(file, "UTF-8");
@@ -640,8 +690,7 @@
     
     // Initialize
     loadSampleData();
-    initBarcodeDetector();
-    showToast("✅ App ready! Scan barcode or search SKU");
+    showToast("✅ App ready! Upload your CSV file - all products will be kept");
 </script>
 </body>
 </html>
